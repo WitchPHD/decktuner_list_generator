@@ -3,18 +3,18 @@ Scrape the DeckTuner server server for information about workshops and channels,
 
 # How this tool functions:
 
-1. Scans tuning-board for 100 messages
+1. Scans tuning-board for 100 messages.
 
-	1a. Creates a workshop object with relevant information from each message
+	1a. Creates a workshop object with relevant information from each message.
 	
-	1b. If the workshop has "tuner: none" then add the workshop_id to a list
+	1b. If the workshop has "tuner: none" then add the workshop_id to a list.
 	
-2. Scans spam-log's recent 100 messages for "user left" messages and records the user_id of the user that left
-3. Scans all workshop channels and...
+2. Scans spam-log's recent 100 messages for "user left" messages and ads the user_ids to a list.
+3. Scans all workshop channels.
 
-	3a. Finds the workshop object that have the same channel_id and adds the channel name to it
+	3a. Finds the workshop object that have the same channel_id and adds the channel name to it.
 	
-	3b. If the pilot's id is in the list of people that left, mark the workshop as pilotless with killuser()
+	3b. If the pilot's id is in the list of people that left, mark the workshop's pilot as dead with killuser().
 	
 	3c. If workshop matches the id of a workshop which has no tuner, set the workshop's "claimed" property to false.
 	
@@ -22,7 +22,7 @@ Scrape the DeckTuner server server for information about workshops and channels,
 	
 4. Do some housekeeping (clear some stuff, set some variables for later math, etc).
 5. Print a list of workshops whose pilot has left.
-6. Print a list of workshops which are inactive (but have a tuner)
+6. Print a list of workshops which are inactive (but have a tuner).
 7. Print a list of tunerless workshops.
 8. Print some math.
  
