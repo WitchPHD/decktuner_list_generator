@@ -3,7 +3,7 @@ Scrape the DeckTuner server server for information about workshops and channels,
 
 # How this tool functions:
 
-1. Scans workshop-board for 100 messages
+1. Scans tuning-board for 100 messages
 
 	1a. Creates a workshop object with relevant information from each message
 	
