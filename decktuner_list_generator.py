@@ -16,11 +16,14 @@ class WORKSHOP:
         self.user_alive = True
         self.active = True
         self.claimed = True
+        self.new = False
         self.deconstruct(raw)
     def killuser (self):
         self.user_alive = False
     def deactivate (self):
         self.active = False
+    def flag_new (self):
+        self.new = True
     def deconstruct(self, raw):
         raw = raw.replace("\"", "\'")
         print("\nNEW WORKSHOP:", raw)
@@ -70,6 +73,7 @@ def retrieve_channels(server_ID):
     #time info put outside of loop to increase scope
     check_time_stamp = datetime.datetime.now().timestamp()
     twenty_days = 86400*20
+    ten_days = 86400*10
     for x in channel_raw:
         #check tuning boards for inactive workshops first
         if "tuning-board" in x["name"]:
@@ -119,6 +123,10 @@ def retrieve_channels(server_ID):
                         for z in workshop_list:
                             if z.id == x["id"]:
                                 z.deactivate()
+                    if check_time_stamp - message_time < ten_days:
+                        for z in workshop_list:
+                            if z.id == x["id"]:
+                                z.flag_new()
             except:
                 print("Error for {}.".format(x["name"]))
 
@@ -155,7 +163,7 @@ def print_workshops():
             entry += " | __{:}__".format(x.commander)
             if x.tip != "none":
                 entry += " | **TIP: {:}**".format(x.tip)
-            if x.active == True:
+            if x.new == True:
                 entry += " _(new)_"
             line_counter += 1
             unclaimed += 1
@@ -179,3 +187,4 @@ def print_workshops():
 if __name__ == "__main__":
     retrieve_channels(decktuner)
     print_workshops()
+
