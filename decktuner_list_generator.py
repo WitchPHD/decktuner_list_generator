@@ -32,6 +32,12 @@ class WORKSHOP:
             tmp_id = re.search("<#.*?>", raw).group()
             self.id = str(tmp_id[2:-1])
 
+            #get the timestamp
+            tmp_stamp = re.search("'timestamp': '.*?',", raw).group()
+            print(tmp_stamp)
+            self.stamp = str(tmp_stamp[14:-2])
+            self.stamp = datetime.datetime.fromisoformat(self.stamp).timestamp()
+
             #get the budget
             tmp_budget = re.search("Budget', 'value': '.*?',", raw).group()
             self.budget =  str(tmp_budget[19:-2]).lower()
@@ -73,7 +79,7 @@ def retrieve_channels(server_ID):
     #time info put outside of loop to increase scope
     check_time_stamp = datetime.datetime.now().timestamp()
     twenty_days = 86400*20
-    ten_days = 86400*10
+    seven_days = 86400*7
     for x in channel_raw:
         #check tuning boards for inactive workshops first
         if "tuning-board" in x["name"]:
@@ -123,10 +129,10 @@ def retrieve_channels(server_ID):
                         for z in workshop_list:
                             if z.id == x["id"]:
                                 z.deactivate()
-                    if check_time_stamp - message_time < ten_days:
-                        for z in workshop_list:
-                            if z.id == x["id"]:
-                                z.flag_new()
+                #check the workshop creation 
+                for z in workshop_list:
+                    if check_time_stamp - z.stamp < seven_days:
+                        z.flag_new()
             except:
                 print("Error for {}.".format(x["name"]))
 
@@ -136,6 +142,7 @@ def print_workshops():
     inactive_claimed = 0
     unclaimed = 0
     inactive = 0
+    new = 0
 
     #print workshops with users that left
     print("\nWorkshops Whose Pilots Have Left:")
@@ -165,6 +172,7 @@ def print_workshops():
                 entry += " | **TIP: {:}**".format(x.tip)
             if x.new == True:
                 entry += " _(new)_"
+                new += 1
             line_counter += 1
             unclaimed += 1
             print (entry)
@@ -180,6 +188,7 @@ def print_workshops():
     #do and print maths
     print("\n\nThere are {:} open workshops:".format(tot))
     print(" - {:} ({:.2f}%) of them are unclaimed.".format(unclaimed, 100*(unclaimed/tot)))
+    print(" - {:} ({:.2f}%) have been created in the past week.".format(new, 100*(new/tot)))
     print(" - {:} ({:.2f}%) have been inactive for more than 20 days.".format(inactive, 100*(inactive/tot)))
     print(" - {:} ({:.2f}%) of inactive workshops that have been claimed by a tuner already.".format(inactive_claimed, 100*(inactive_claimed/inactive)))
     print(" - {:} total workshop requests received; {:} ({:.2f}%) of requests completed.".format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
@@ -187,4 +196,3 @@ def print_workshops():
 if __name__ == "__main__":
     retrieve_channels(decktuner)
     print_workshops()
-
