@@ -17,6 +17,7 @@ class WORKSHOP:
         self.active = True
         self.claimed = True
         self.new = False
+        self.urgent = False
         self.deconstruct(raw)
     def killuser (self):
         self.user_alive = False
@@ -24,6 +25,8 @@ class WORKSHOP:
         self.active = False
     def flag_new (self):
         self.new = True
+    def flag_urgent (self):
+        self.urgent = True
     def deconstruct(self, raw):
         raw = raw.replace("\"", "\'")
         print("\nNEW WORKSHOP:", raw)
@@ -78,8 +81,7 @@ def retrieve_channels(server_ID):
     channel_raw = json.loads(r.text)
     #time info put outside of loop to increase scope
     check_time_stamp = datetime.datetime.now().timestamp()
-    twenty_days = 86400*20
-    seven_days = 86400*7
+    days = 86400
     for x in channel_raw:
         #check tuning boards for inactive workshops first
         if "tuning-board" in x["name"]:
@@ -125,14 +127,16 @@ def retrieve_channels(server_ID):
                 #check the messages timestamp and compare to now()
                 for y in recent_activity:
                     message_time = datetime.datetime.fromisoformat(y["timestamp"]).timestamp()
-                    if check_time_stamp - message_time > twenty_days:
+                    if check_time_stamp - message_time > 20*days:
                         for z in workshop_list:
                             if z.id == x["id"]:
                                 z.deactivate()
                 #check the workshop creation 
                 for z in workshop_list:
-                    if check_time_stamp - z.stamp < seven_days:
+                    if check_time_stamp - z.stamp < 7*days:
                         z.flag_new()
+                    if check_time_stamp - z.stamp > 20*days:
+                        z.flag_urgent()
             except:
                 print("Error for {}.".format(x["name"]))
 
@@ -142,6 +146,7 @@ def print_workshops():
     inactive_claimed = 0
     unclaimed = 0
     inactive = 0
+    urgent = 0
     new = 0
 
     #print workshops with users that left
@@ -173,6 +178,9 @@ def print_workshops():
             if x.new == True:
                 entry += " _(new)_"
                 new += 1
+            if x.urgent == True:
+                entry += " `URGENT`"
+                urgent += 1 
             line_counter += 1
             unclaimed += 1
             print (entry)
@@ -186,13 +194,14 @@ def print_workshops():
     alltime_tot = int(newest_shop.name.replace("workshop-", ""))
     
     #do and print maths
-    print("\n\nThere are {:} open workshops:".format(tot))
-    print(" - {:} ({:.2f}%) of them are unclaimed.".format(unclaimed, 100*(unclaimed/tot)))
-    print(" - {:} ({:.2f}%) have been created in the past week.".format(new, 100*(new/tot)))
-    print(" - {:} ({:.2f}%) have been inactive for more than 20 days.".format(inactive, 100*(inactive/tot)))
+    print("\n\nThere are {:} open workshops, and {:} ({:.2f}%) of them are unclaimed.".format(tot, unclaimed, 100*(unclaimed/tot)))
+    print(" - {:} ({:.2f}%) unclaimed workshops were created more than 30 days ago.".format(urgent, 100*(urgent/unclaimed)))
+    print(" - {:} ({:.2f}%) unclaimed workshops were made in the past 7 days.".format(new, 100*(new/unclaimed)))
+    print(" - {:} ({:.2f}%) total workshops have have been inactive for more than 20 days.".format(inactive, 100*(inactive/tot)))
     print(" - {:} ({:.2f}%) of inactive workshops that have been claimed by a tuner already.".format(inactive_claimed, 100*(inactive_claimed/inactive)))
     print(" - {:} total workshop requests received; {:} ({:.2f}%) of requests completed.".format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
 
 if __name__ == "__main__":
     retrieve_channels(decktuner)
     print_workshops()
+
