@@ -350,7 +350,7 @@ def print_workshops():
                 print("\n")
                 line_counter = 0
     #print bounty report
-    print("\n:dollar:**Workshop Bounty**:dollar: ")
+    print("\n:dollar:**Workshop Bounty Board**:dollar: ")
     print(" - {:} $$ total is available in unclaimed tips.".format(tip_tot))
     print(" - Highest bounty amount: {:} $$ in #{:}".format(high_tip, high_name))
 
