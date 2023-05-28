@@ -29,7 +29,6 @@ class WORKSHOP:
         self.urgent = True
     def deconstruct(self, raw):
         raw = raw.replace("\"", "\'")
-        print("\nNEW WORKSHOP:", raw)
         try:
             #get the id
             tmp_id = re.search("<#.*?>", raw).group()
@@ -37,7 +36,6 @@ class WORKSHOP:
 
             #get the timestamp
             tmp_stamp = re.search("'timestamp': '.*?',", raw).group()
-            print(tmp_stamp)
             self.stamp = str(tmp_stamp[14:-2])
             self.stamp = datetime.datetime.fromisoformat(self.stamp).timestamp()
 
@@ -56,12 +54,19 @@ class WORKSHOP:
             self.commander = str(tmp_cmdr[9:-2])
 
             #get the tip (not in practice yet)
-            tmp_tip = "none"
-            self.tip = "none"
-            
+            try:
+                tmp_tip = re.search("Tip Amount', 'value': '.*?',", raw).group()
+                self.tip = str(tmp_tip[23:-2])
+                #convert the tip to a number
+                self.tip = int(re.sub('[^0-9]','', self.tip))
+            except:
+                self.tip = 0
+
             #get the pilot
             tmp_pilot = re.search("Pilot', 'value': '<@.*?>',", raw).group()
             self.pilot = str(tmp_pilot[20:-3])
+      
+            print("\nNEW WORKSHOP:", raw)
         except:
             print("\n Error in workshop:", raw)
 
@@ -146,6 +151,7 @@ def print_workshops():
     inactive_claimed = 0
     unclaimed = 0
     inactive = 0
+    tip_tot = 0
     urgent = 0
     new = 0
 
@@ -173,13 +179,15 @@ def print_workshops():
             if x.budget != "none":
                 entry += " | {:}".format(x.budget)
             entry += " | __{:}__".format(x.commander)
-            if x.tip != "none":
-                entry += " | **TIP: {:}**".format(x.tip)
+            if x.tip != 0:
+                entry += " | :dollar:**TIP: {:} $$** ".format(x.tip)
+                #add tip to tip total
+                tip_tot += x.tip
             if x.new == True:
                 entry += " _(new)_"
                 new += 1
             if x.urgent == True:
-                entry += " `URGENT`"
+                entry += " | `[URGENT]` :exclamation: "
                 urgent += 1 
             line_counter += 1
             unclaimed += 1
@@ -199,9 +207,10 @@ def print_workshops():
     print(" - {:} ({:.2f}%) unclaimed workshops were made in the past 7 days.".format(new, 100*(new/unclaimed)))
     print(" - {:} ({:.2f}%) total workshops have have been inactive for more than 20 days.".format(inactive, 100*(inactive/tot)))
     print(" - {:} ({:.2f}%) of inactive workshops that have been claimed by a tuner already.".format(inactive_claimed, 100*(inactive_claimed/inactive)))
-    print(" - {:} total workshop requests received; {:} ({:.2f}%) of requests completed.".format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
+    print(" - {:} total workshop requests received; {:} ({:.2f}%) of all-time workshops have been closed.".format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
+    print(" - {:} USD is available in unclaimed tips.".format(tip_tot))
 
 if __name__ == "__main__":
     retrieve_channels(decktuner)
     print_workshops()
-
+    
