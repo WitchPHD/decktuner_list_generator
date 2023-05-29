@@ -56,9 +56,7 @@ class WORKSHOP:
             #get the tip (not in practice yet)
             try:
                 tmp_tip = re.search("Tip Amount', 'value': '.*?',", raw).group()
-                self.tip = str(tmp_tip[23:-2])
-                #convert the tip to a number
-                self.tip = int(re.sub('[^0-9]','', self.tip))
+                self.tip = cash(str(tmp_tip[23:-2]))
             except:
                 self.tip = 0
 
@@ -145,6 +143,22 @@ def retrieve_channels(server_ID):
             except:
                 print("Error for {}.".format(x["name"]))
 
+def cash(amount):
+    #convert a string representing a cash amount into usd
+    usd = int(re.sub('[^0-9]','', amount))
+    amount = amount.lower()
+    if "-" in amount:
+        l = amount.split("-")
+        usd = int(re.sub('[^0-9]','', l[0]))
+    if "to" in amount:
+        l = amount.split("to")
+        usd = int(re.sub('[^0-9]','', l[0]))
+    if "€" in amount or "eur" in amount:
+        usd = usd*1.07
+    if "£" in amount or "gbp" in amount:
+        usd = usd*1.23
+    return usd
+
 def print_workshops():
     #create some counters for math and printing
     workshop_list.reverse()
@@ -182,7 +196,7 @@ def print_workshops():
                 entry += " | {:}".format(x.budget)
             entry += " | __{:}__".format(x.commander)
             if x.tip != 0:
-                entry += " | :dollar: **TIP: {:} $$** ".format(x.tip)
+                entry += " | :dollar: **TIP: {:.2f} $$** ".format(x.tip)
                 #add tip to tip total
                 tip_tot += x.tip
                 if x.tip > high_tip:
@@ -202,8 +216,8 @@ def print_workshops():
                 line_counter = 0
     #print bounty report
     print("\n:dollar: **Workshop Bounty Board** :dollar: ")
-    print("- **{:} $$** total is available in unclaimed tips.".format(tip_tot))
-    print("- Highest bounty amount: **{:} $$** in #{:}".format(high_tip, high_name))
+    print("- **{:.2f} $$** total is available in unclaimed tips.".format(tip_tot))
+    print("- Highest bounty amount: **{:.2f} $$** in #{:}".format(high_tip, high_name))
 
     #find active workshop count and latest unclaimed shop number for maths
     tot = len(workshop_list)
