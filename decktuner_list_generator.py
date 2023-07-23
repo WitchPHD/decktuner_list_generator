@@ -3,8 +3,8 @@ import json
 import datetime
 import re
 
-auth = "my auth code is mine and you can't have it; get your own and put it here"
-decktuner = "decktuner channel ID"
+auth = 'my auth code is mine and you cannot have it; get your own and put it here'
+decktuner = 'decktuner channel ID'
 unclaimed_ids = []
 user_left_ids = []
 workshop_list = []
@@ -53,11 +53,12 @@ class WORKSHOP:
             tmp_cmdr = re.search("title': '.*?',", raw).group()
             self.commander = str(tmp_cmdr[9:-2])
 
-            #get the tip (not in practice yet)
+            #get the tip
             try:
                 tmp_tip = re.search("Tip Amount', 'value': '.*?',", raw).group()
                 self.tip = cash(str(tmp_tip[23:-2]))
-            except:
+            except Exception as e:
+                print (e)
                 self.tip = 0
 
             #get the pilot
@@ -65,8 +66,8 @@ class WORKSHOP:
             self.pilot = str(tmp_pilot[20:-3])
       
             print("\nNEW WORKSHOP:", raw)
-        except:
-            print("\n Error in workshop:", raw)
+        except Exception as e:
+            print("\n Error in workshop: {:} \n {:}".format(e, raw))
 
 def retrieve_messages(channel_ID, amount):
     headers={
@@ -140,17 +141,18 @@ def retrieve_channels(server_ID):
                         z.flag_new()
                     if check_time_stamp - z.stamp > 20*days:
                         z.flag_urgent()
-            except:
-                print("Error for {}.".format(x["name"]))
+            except Exception as e:
+                print("Error for {:}: {:}.".format(x["name"], e))
 
 def cash(amount):
-    #convert a string representing a cash amount into usd
+    #convert a string representing a cash amount into us'
     usd = int(re.sub('[^0-9]','', amount))
     amount = amount.lower()
+    print(usd)
     if "-" in amount:
         l = amount.split("-")
         usd = int(re.sub('[^0-9]','', l[0]))
-    if "to" in amount:
+    if "to" in amount and "up to" not in amount:
         l = amount.split("to")
         usd = int(re.sub('[^0-9]','', l[0]))
     if "€" in amount or "eur" in amount:
