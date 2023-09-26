@@ -278,7 +278,7 @@ def print_workshops():
     tuner_list.sort(key=lambda x: len(x.active_workshops), reverse=True)
     print('\n**Tuner Activity in {:} claimed workshops:**'.format(claimed))
     for y in tuner_list:
-        print('- <@{:}>: {:} active workshops. ({:.2f}%) AVG Time: {:.0f} day(s).'.format(y.get_id(), len(y.active_workshops), 100*(len(y.active_workshops)/claimed), (y.runtime/len(y.active_workshops))/days))
+        print('- <@{:}>: {:} active workshops. ({:.2f}%) AVG Time: {:.0f} days.'.format(y.get_id(), len(y.active_workshops), 100*(len(y.active_workshops)/claimed), (y.runtime/len(y.active_workshops))/days))
 
     #find active workshop count and latest unclaimed shop number for maths
     tot = len(workshop_list)
