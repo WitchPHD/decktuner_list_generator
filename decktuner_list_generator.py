@@ -5,6 +5,8 @@ import re
 
 auth = 'my auth code is mine and you cannot have it; get your own and put it here'
 decktuner = 'decktuner channel ID'
+NOW = datetime.datetime.now()
+days = 86400
 unclaimed_ids = []
 user_left_ids = []
 workshop_list = []
@@ -13,9 +15,11 @@ tuner_list = []
 class TUNER:
     def __init__(self, tuner, first_shop):
         self.active_workshops = [first_shop]
+        self.runtime = first_shop.runtime
         self.id = tuner
     def add_workshop (self, shop):
         self.active_workshops.append(shop)
+        self.runtime += shop.runtime
     def get_id(self):
         #return the id as a string
         return self.id.replace('\\n', ' & ')
@@ -51,6 +55,10 @@ class WORKSHOP:
             tmp_stamp = re.search("'timestamp': '.*?',", raw).group()
             self.stamp = str(tmp_stamp[14:-2])
             self.stamp = datetime.datetime.fromisoformat(self.stamp).timestamp()
+            
+            #get the runtime from the timestamp
+            self.runtime = NOW.timestamp() - self.stamp
+            print('Open {:.0f} days'.format(self.runtime/days))
 
             #get the budget
             tmp_budget = re.search("Budget', 'value': '.*?',", raw).group()
@@ -115,8 +123,7 @@ def retrieve_channels(server_ID):
     r = requests.get('https://discord.com/api/v9/guilds/{:}/channels'.format(server_ID), headers=headers)
     channel_raw = json.loads(r.text)
     #time info put outside of loop to increase scope
-    check_time_stamp = datetime.datetime.now().timestamp()
-    days = 86400
+    check_time_stamp = NOW.timestamp()
     for x in channel_raw:
         #check tuning boards for inactive workshops first
         if 'tuning-board' in x['name']:
@@ -176,13 +183,18 @@ def retrieve_channels(server_ID):
                 print('Error for {:}: {:}.'.format(x['name'], e))
 
 def cash(amount):
-    #convert a string representing a cash amount into us'
+    #convert a string representing a cash amount into usd
     usd = int(re.sub('[^0-9]','', amount))
     amount = amount.lower()
     print(usd)
     if '-' in amount:
         l = amount.split('-')
+        amount = str(e.sub('[^0-9]','', l[0]))
         usd = int(re.sub('[^0-9]','', l[0]))
+    if '.' in amount:
+        l = amount.split('.')
+        amount = str(e.sub('[^0-9]','', l[1]))
+        usd = int(re.sub('[^0-9]','', l[1]))
     if 'to' in amount and 'up to' not in amount:
         l = amount.split('to')
         usd = int(re.sub('[^0-9]','', l[0]))
@@ -190,9 +202,13 @@ def cash(amount):
         usd = usd*1.07
     if '£' in amount or 'gbp' in amount:
         usd = usd*1.23
+    if 'a$' in amount or 'au$' in amount or 'aud' in amount:
+        usd = usd*0.64
     return usd
 
 def print_workshops():
+    print('Lists generated at: {:}'.format(NOW))
+    
     #create some counters for math and printing
     workshop_list.reverse()
     inactive_claimed = 0
@@ -250,6 +266,7 @@ def print_workshops():
                 line_counter = 0
         else:
             claimed += 1
+    
     #print bounty report
     print('\n:dollar: **Workshop Bounty Board** :dollar: ')
     print('- **{:.2f} $$** total is available in unclaimed tips.'.format(tip_tot))
@@ -259,7 +276,7 @@ def print_workshops():
     tuner_list.sort(key=lambda x: len(x.active_workshops), reverse=True)
     print('\n**Tuner Activity in {:} claimed workshops:**'.format(claimed))
     for y in tuner_list:
-        print('- <@{:}>: {:} active workshops. ({:.2f}%)'.format(y.get_id(), len(y.active_workshops), 100*(len(y.active_workshops)/claimed)))
+        print('- <@{:}>: {:} active workshops. ({:.2f}%) AVG Time: {:.0f} day(s).'.format(y.get_id(), len(y.active_workshops), 100*(len(y.active_workshops)/claimed), (y.runtime/len(y.active_workshops))/days))
 
     #find active workshop count and latest unclaimed shop number for maths
     tot = len(workshop_list)
