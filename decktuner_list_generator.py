@@ -252,14 +252,14 @@ def print_workshops():
                 if x.tip > high_tip:
                     high_tip = x.tip
                     high_name = x.name
-            if x.urgent == True:
-                entry += ' `[URGENT]` :exclamation: '
-                urgent += 1
             if x.new == True:
                 entry += ' _(new)_'
                 new += 1
             else:
                 entry += ' _({:.0f} days)_'.format(x.runtime/days)
+            if x.urgent == True:
+                entry += ' `[URGENT]` :exclamation: '
+                urgent += 1
             line_counter += 1
             unclaimed += 1
             print (entry)
