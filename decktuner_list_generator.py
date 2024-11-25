@@ -27,6 +27,7 @@ class TUNER:
 class WORKSHOP:
     def __init__(self, raw):
         #set all the basic data
+        self.close_attempted = False
         self.user_alive = True
         self.claimed = True
         self.urgent = False
@@ -44,6 +45,8 @@ class WORKSHOP:
         self.new = True
     def flag_urgent (self):
         self.urgent = True
+    def closefail (self):
+        self.close_attempted = True
     def deconstruct(self, raw):
         raw = raw.replace('\"', '\'')
         try:
@@ -124,6 +127,7 @@ def retrieve_channels(server_ID):
     channel_raw = json.loads(r.text)
     #time info put outside of loop to increase scope
     check_time_stamp = NOW.timestamp()
+    print (channel_raw)
     for x in channel_raw:
         #check tuning boards for inactive workshops first
         if 'tuning-board' in x['name']:
@@ -165,11 +169,11 @@ def retrieve_channels(server_ID):
                             #if id unclaimed, set unclaimed
                             y.claimed = False
                             print('Append {:} to unclaimed - ID match: {:}'.format(x['name'], x['id']))#check timestamp
+                #check the most recent timestamp and compare to now()
                 recent_activity = retrieve_messages(x['id'], 1)
-                #check the messages timestamp and compare to now()
                 for y in recent_activity:
                     message_time = datetime.datetime.fromisoformat(y['timestamp']).timestamp()
-                    if check_time_stamp - message_time > 20*days:
+                    if check_time_stamp - message_time > 10*days:
                         for z in workshop_list:
                             if z.id == x['id']:
                                 z.deactivate()
@@ -179,6 +183,13 @@ def retrieve_channels(server_ID):
                         z.flag_new()
                     if check_time_stamp - z.stamp > 20*days:
                         z.flag_urgent()
+                #check recent five messages for !close
+                recent_activity = retrieve_messages(x['id'], 5)
+                for y in recent_activity:
+                    if y['content'] == '!close':
+                        for z in workshop_list:
+                            if z.id == x['id']:
+                                z.closefail()
             except Exception as e:
                 print('Error for {:}: {:}.'.format(x['name'], e))
 
@@ -189,11 +200,23 @@ def cash(amount):
     print(usd)
     if '-' in amount:
         l = amount.split('-')
-        amount = str(e.sub('[^0-9]','', l[0]))
+        amount = str(re.sub('[^0-9]','', l[0]))
+        usd = int(re.sub('[^0-9]','', l[0]))
+    if '/' in amount:
+        l = amount.split('/')
+        amount = str(re.sub('[^0-9]','', l[0]))
+        usd = int(re.sub('[^0-9]','', l[0]))
+    if '\\' in amount:
+        l = amount.split('\\')
+        amount = str(re.sub('[^0-9]','', l[0]))
+        usd = int(re.sub('[^0-9]','', l[0]))
+    if 'or' in amount:
+        l = amount.split('or')
+        amount = str(re.sub('[^0-9]','', l[0]))
         usd = int(re.sub('[^0-9]','', l[0]))
     if '.' in amount:
         l = amount.split('.')
-        amount = str(e.sub('[^0-9]','', l[1]))
+        amount = str(re.sub('[^0-9]','', l[1]))
         usd = int(re.sub('[^0-9]','', l[1]))
     if 'to' in amount and 'up to' not in amount:
         l = amount.split('to')
@@ -218,6 +241,7 @@ def print_workshops():
     high_tip = 0
     tip_tot = 0
     claimed = 0
+    day_tot = 0
     urgent = 0
     new = 0
 
@@ -225,6 +249,12 @@ def print_workshops():
     print('\nWorkshops Whose Pilots Have Left:')
     for x in workshop_list:
         if x.user_alive == False:
+            print(' - #{:}'.format(x.name))
+
+    #print workshops with failed !close
+    print('\nWorkshops That Failed to !close:')
+    for x in workshop_list:
+        if x.close_attempted == True:
             print(' - #{:}'.format(x.name))
 
     #print inactive but claimed workshops and increment counter
@@ -256,14 +286,22 @@ def print_workshops():
                 entry += ' _(new)_'
                 new += 1
             else:
-                entry += ' _({:.0f} days)_'.format(x.runtime/days)
+                day_tot = day_tot + (x.runtime / days)
+                dy = math.trunc(x.runtime / days)
+                mn = math.trunc(x.runtime / (days*30))
+                if mn >= 2:
+                    entry += ' _({:.0f} months)_'.format(mn)
+                elif mn >=1:
+                    entry += ' _({:.0f} month)_'.format(mn)
+                else:
+                    entry += ' _({:.0f} days)_'.format(dy)
             if x.urgent == True:
                 entry += ' `[URGENT]` :exclamation: '
                 urgent += 1
             line_counter += 1
             unclaimed += 1
             print (entry)
-            if line_counter == 20:
+            if line_counter == 16:
                 print('\n')
                 line_counter = 0
         else:
@@ -288,6 +326,7 @@ def print_workshops():
     #do and print maths
     print('\n\n**Workshop Stats:**')
     print('- There are {:} open workshops, and {:} ({:.2f}%) of them are unclaimed.'.format(tot, unclaimed, 100*(unclaimed/tot)))
+    print('- Unclaimed workshops have been open for an average of {:.0f} days (approx {:.0f} months).'.format((day_tot/unclaimed), ((day_tot/30)/unclaimed)))
     print('- {:} unclaimed workshops were created more than 30 days ago. ({:.2f}%)'.format(urgent, 100*(urgent/unclaimed)))
     print('- {:} unclaimed workshops were made in the past 7 days. ({:.2f}%)'.format(new, 100*(new/unclaimed)))
     print('- {:} total workshops have have been inactive for more than 20 days. ({:.2f}%)'.format(inactive, 100*(inactive/tot)))
