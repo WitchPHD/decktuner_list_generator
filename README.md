@@ -4,7 +4,7 @@ Scrape the DeckTuner server server for information about workshops and channels,
 # How this tool functions:
 
 1. Gets a list of all channels to scan.
-2. Scans tuning-board for 100 messages.
+2. Scans tuning-board for 100 messages. (note: 100 seems to be the limit of the discord API)
 
 	1a. Creates a workshop object with relevant information from each message.
 	
@@ -28,7 +28,7 @@ Scrape the DeckTuner server server for information about workshops and channels,
 		
 		3dβ. If the workshop is less than 7 days old, mark with flag_new()
 		
-		3dγ. If the message is more than 20 old, mark with flag_urgent()
+		3dγ. If the workshop is more than 20 old, mark with flag_urgent()
 	
 5. Do some housekeeping (clear some stuff, set some variables for later math, etc).
 6. Print a list of workshops whose pilot has left.
