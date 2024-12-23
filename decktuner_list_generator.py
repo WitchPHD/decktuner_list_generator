@@ -233,44 +233,44 @@ def print_workshops():
     new = 0
 
     #print workshops objects with no name
-    print('\nWorkshops On Tuning Board With no Room:')
+    print('\nWorkshops on tuning board with no room:')
     for x in workshop_list:
         if x.name == ' ':
             print(' - Room ID: {:}, Pilot: <@{:}>'.format(x.id, x.pilot))
             workshop_list.remove(x)
 
     #print workshops with users that left
-    print('\nWorkshops Whose Pilots Have Left:')
+    print('\nWorkshops whose pilots have left:')
     for x in workshop_list:
         if x.user_alive == False:
             print(' - #{:}'.format(x.name))
             workshop_list.remove(x)
 
     #print workshops with failed !close
-    print('\nWorkshops That Failed to !close:')
+    print('\nWorkshops that failed to !close:')
     for x in workshop_list:
         if x.close_attempted == True:
             print(' - #{:}'.format(x.name))
             workshop_list.remove(x)
             
     #print unclaimed workshops older than two months to delete 
-    print('\nWorkshops for Deletion:')
+    print('\nWorkshops flagged for deletion:')
     for x in workshop_list:
         if x.run_days >= 60  and x.claimed == False:
             print(' - #{:}'.format(x.name))
 
     #print inactive but claimed workshops and increment counter
-    print('\nInactive (claimed) Workshops:')
+    print('\nWorkshops flagged as inactive (claimed):')
     for x in workshop_list:
         if x.active == False:
             inactive += 1
             if x.claimed == True:
                 print(' - #{:}'.format(x.name))
                 inactive_claimed += 1
-
+    
     #print unclaimed workshops, varying formating based on if they have budget, tip, or both
     line_counter = 0
-    print('\n**Unclaimed Workshops:**')
+    print('\n**Unclaimed workshop list:**')
     for x in workshop_list:
         if x.claimed == False:
             entry='- #{:}: {:}'.format(x.name, x.cat)
