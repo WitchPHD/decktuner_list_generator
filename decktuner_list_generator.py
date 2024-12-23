@@ -1,5 +1,6 @@
 import requests
 import datetime
+import math
 import json
 import re
 
@@ -30,9 +31,8 @@ class WORKSHOP:
         self.close_attempted = False
         self.user_alive = True
         self.claimed = True
-        self.urgent = False
         self.active = True
-        self.new = False
+        self.run_days = 0
         self.raw = raw
         self.name = ' '
         #get all the data from the raw data
@@ -41,14 +41,11 @@ class WORKSHOP:
         self.user_alive = False
     def deactivate (self):
         self.active = False
-    def flag_new (self):
-        self.new = True
-    def flag_urgent (self):
-        self.urgent = True
     def closefail (self):
         self.close_attempted = True
     def deconstruct(self, raw):
         raw = raw.replace('\"', '\'')
+        print('\nNEW WORKSHOP:', raw)
         try:
             #get the id
             tmp_id = re.search('<#.*?>', raw).group()
@@ -59,10 +56,10 @@ class WORKSHOP:
             self.stamp = str(tmp_stamp[14:-2])
             self.stamp = datetime.datetime.fromisoformat(self.stamp).timestamp()
             
-            #get the runtime from the timestamp
+            #get the runtime and daysfrom the timestamp
             self.runtime = NOW.timestamp() - self.stamp
-            print('Open {:.0f} days'.format(self.runtime/days))
-
+            self.run_days = math.trunc(self.runtime / days)
+            
             #get the budget
             tmp_budget = re.search("Budget', 'value': '.*?',", raw).group()
             self.budget =  str(tmp_budget[19:-2]).lower()
@@ -82,7 +79,7 @@ class WORKSHOP:
                 tmp_tip = re.search("Tip Amount', 'value': '.*?',", raw).group()
                 self.tip = cash(str(tmp_tip[23:-2]))
             except Exception as e:
-                print ('Error in Tip Generation: {:}'.format(e))
+                print ('Error in Tip Generation for workshop {:}: {:} (Tip set to 0)'.format(self.id, e))
                 self.tip = 0
 
             #get the pilot
@@ -102,14 +99,11 @@ class WORKSHOP:
                 #if workshop was not added to a tuner list, create a new tuner
                 if added == False:
                     t = tuner_list.append(TUNER(tmp_tuner, self))
-
-
             except Exception as e:
-                print('Error adding tuner to workshop {:}: {:}'.format(self.id,e))
-      
-            print('\nNEW WORKSHOP:', raw)
+                print('Error adding tuner to workshop {:}: {:} (No Tuner Set)'.format(self.id,e))
+     
         except Exception as e:
-            print('\n Error in workshop: {:} \n {:}'.format(e, raw))
+            print('\n Error in workshop {:}: \n {:}'.format(e, raw))
 
 def retrieve_messages(channel_ID, amount):
     headers={
@@ -142,6 +136,7 @@ def retrieve_channels(server_ID):
                     print('{:} appended to unclaimed IDs'.format(tmp_id[2:-1]))
         #check spam logs for users that left
         if 'spam-logs' in x['name']:
+            print('')
             spam_messages = retrieve_messages(x['id'], 100)
             for y in spam_messages:
                 spam_raw = str(y['embeds'])
@@ -150,17 +145,15 @@ def retrieve_channels(server_ID):
                     real_left_id = str(tmp_left_id[2:-1])
                     user_left_ids.append(real_left_id)
                     print('User {:} has left the server.'.format(real_left_id))
+    print('')
     for x in channel_raw:
         #check workshop lists
         if 'workshop' in x['name']:
-            #find workshop in list and set the name
-            for y in workshop_list:
-                if y.id == x['id']:
-                    y.name = x['name']
             try:
-                #find the workshop in the workshop list
+                #find the workshop in the workshop list and set properties 
                 for y in workshop_list:
                     if y.id == x['id']:
+                        y.name = x['name']
                         if y.pilot in user_left_ids:
                             #if pilot left, kill user
                             y.killuser()
@@ -177,12 +170,6 @@ def retrieve_channels(server_ID):
                         for z in workshop_list:
                             if z.id == x['id']:
                                 z.deactivate()
-                #check the workshop creation 
-                for z in workshop_list:
-                    if check_time_stamp - z.stamp < 7*days:
-                        z.flag_new()
-                    if check_time_stamp - z.stamp > 20*days:
-                        z.flag_urgent()
                 #check recent five messages for !close
                 recent_activity = retrieve_messages(x['id'], 5)
                 for y in recent_activity:
@@ -230,7 +217,7 @@ def cash(amount):
     return usd
 
 def print_workshops():
-    print('Lists generated at: {:}'.format(NOW))
+    print('\n\n\n ---- Lists generated at: {:} ---- '.format(NOW))
     
     #create some counters for math and printing
     workshop_list.reverse()
@@ -245,16 +232,31 @@ def print_workshops():
     urgent = 0
     new = 0
 
+    #print workshops objects with no name
+    print('\nWorkshops On Tuning Board With no Room:')
+    for x in workshop_list:
+        if x.name == ' ':
+            print(' - Room ID: {:}, Pilot: <@{:}>'.format(x.id, x.pilot))
+            workshop_list.remove(x)
+
     #print workshops with users that left
     print('\nWorkshops Whose Pilots Have Left:')
     for x in workshop_list:
         if x.user_alive == False:
             print(' - #{:}'.format(x.name))
+            workshop_list.remove(x)
 
     #print workshops with failed !close
     print('\nWorkshops That Failed to !close:')
     for x in workshop_list:
         if x.close_attempted == True:
+            print(' - #{:}'.format(x.name))
+            workshop_list.remove(x)
+            
+    #print unclaimed workshops older than two months to delete 
+    print('\nWorkshops for Deletion:')
+    for x in workshop_list:
+        if x.run_days >= 60  and x.claimed == False:
             print(' - #{:}'.format(x.name))
 
     #print inactive but claimed workshops and increment counter
@@ -282,25 +284,26 @@ def print_workshops():
                 if x.tip > high_tip:
                     high_tip = x.tip
                     high_name = x.name
-            if x.new == True:
+            day_tot = day_tot + (x.runtime / days)
+            if x.run_days < 7:
                 entry += ' _(new)_'
                 new += 1
-            else:
-                day_tot = day_tot + (x.runtime / days)
-                dy = math.trunc(x.runtime / days)
-                mn = math.trunc(x.runtime / (days*30))
-                if mn >= 2:
-                    entry += ' _({:.0f} months)_'.format(mn)
-                elif mn >=1:
-                    entry += ' _({:.0f} month)_'.format(mn)
-                else:
-                    entry += ' _({:.0f} days)_'.format(dy)
-            if x.urgent == True:
-                entry += ' `[URGENT]` :exclamation: '
+                line_counter += 1
+                unclaimed += 1
+                print (entry)
+            elif x.run_days <= 30:
+                entry += ' _({:.0f} days)_'.format(x.run_days)
+                line_counter += 1
+                unclaimed += 1
+                print (entry)
+            elif x.run_days < 60:
+                entry += ' _(> 1 month)_ `[URGENT]` :exclamation: '
                 urgent += 1
-            line_counter += 1
-            unclaimed += 1
-            print (entry)
+                line_counter += 1
+                unclaimed += 1
+                print (entry)
+            else:
+                entry = ' - DELETE BEFORE POSTING {:} DELETE BEFORE POSTING '.format(x.name)
             if line_counter == 16:
                 print('\n')
                 line_counter = 0
@@ -336,3 +339,4 @@ def print_workshops():
 if __name__ == '__main__':
     retrieve_channels(decktuner)
     print_workshops()
+    
