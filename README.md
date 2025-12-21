@@ -1,6 +1,13 @@
 # decktuner_list_generator
 Scrape the DeckTuner server server for information about workshops and channels, and generate several helpful lists for the mods and tuners. 
 
+To run this script successfully you must first edit two variables: 
+
+	auth = 'my auth code is mine and you cannot have it; get your own and put it here'
+	decktuner = 'put the decktuner channel ID here'
+	
+Replace the strings with strings containing your discord authentication code and decktuner's channel ID.
+
 # How this tool functions:
 
 1. Gets a list of all channels to scan.
