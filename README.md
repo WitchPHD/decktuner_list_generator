@@ -29,18 +29,22 @@ Replace the strings with strings containing your discord authentication code and
 	
 	3c. If workshop matches the id of a workshop which has no tuner, set the workshop's "claimed" property to false.
 	
-	3d. Get the workshop's last message and creation date, and compare timestamps to the current time. 
+	3d. Get the workshop's last message time and creation time, and compare timestamps to the current time. 
 		
 		3dα. If the message is more than 20 days old, then set as inactive with deactivate()
 		
 		3dβ. If the workshop is less than 7 days old, mark with flag_new()
 		
-		3dγ. If the workshop is more than 20 old, mark with flag_urgent()
+		3dγ. If the workshop is more than 20 old days, mark with flag_urgent()
+		
+		3dδ. If the workshop is more than 60 old days and unclaimed, it will be marked for deletion
 	
 5. Do some housekeeping (clear some stuff, set some variables for later math, etc).
 6. Print a list of workshops whose pilot has left.
-7. Print a list of workshops which are inactive (but have a tuner).
-8. Print a list of tunerless workshops, constructing each entry based on the information present in the workshop.
-9. Print Tuning Bounty information
-10. Print some math.
+7. Print a list of workshops where someone used !close but it's still open.
+8. Print a list of workshops which are more than 60 days old (and have no tuner).
+9. Print a list of workshops which are inactive (but have a tuner).
+10. Print a list of tunerless workshops (only this one is constructed for discord's format)
+11. Print Tuning Bounty information
+12. Print some misc info
  
