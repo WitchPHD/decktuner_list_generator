@@ -5,7 +5,7 @@ import json
 import re
 
 auth = 'my auth code is mine and you cannot have it; get your own and put it here'
-decktuner = 'decktuner channel ID'
+decktuner = 'put the decktuner channel ID here'
 NOW = datetime.datetime.now()
 days = 86400
 unclaimed_ids = []
