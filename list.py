@@ -66,9 +66,24 @@ class WORKSHOP:
             if self.budget == 'no budget':
                 self.budget = 'none'
 
-            #get the catagory
-            tmp_cat = re.search("Category', 'value': '.*?',", raw).group()
-            self.cat = str(tmp_cat[21:-2]).lower()
+            #get the bracket
+            try:
+                tmp_bracket = re.search("Bracket', 'value': '.*?',", raw).group()
+            except:
+                tmp_bracket = re.search("Category', 'value': '.*?',", raw).group()
+
+            if '5' in tmp_bracket or '10' in tmp_bracket:
+                self.bracket = 'B5'
+            elif '4' in tmp_bracket:
+                self.bracket = 'B4'
+            elif '3' in tmp_bracket:
+                self.bracket = 'B3'
+            elif '2' in tmp_bracket:
+                self.bracket = 'B2'
+            elif '1' in tmp_bracket:
+                self.bracket = 'B1'
+            else:
+                self.bracket = str(tmp_bracket[21:-2]).lower()
 
             #get the commander
             tmp_cmdr = re.search("title': '.*?',", raw).group()
@@ -76,20 +91,20 @@ class WORKSHOP:
 
             #get the tip
             try:
-                tmp_tip = re.search("Tip Amount', 'value': '.*?',", raw).group()
-                self.tip = cash(str(tmp_tip[23:-2]))
+                tmp_tip = re.search("Tip Offered', 'value': '.*?',", raw).group()
+                self.tip = cash(str(tmp_tip[24:-2]))
             except Exception as e:
                 print ('Error in Tip Generation for workshop {:}: {:} (Tip set to 0)'.format(self.id, e))
                 self.tip = 0
 
             #get the pilot
-            tmp_pilot = re.search("Pilot', 'value': '<@.*?>',", raw).group()
-            self.pilot = str(tmp_pilot[20:-3])
+            tmp_pilot = re.search("Pilot', 'value': '<@.*?>'", raw).group()
+            self.pilot = str(tmp_pilot[20:-2])
 
             #get the tuner
             try:
-                tmp_tuner = re.search("Tuners', 'value': '<@.*?>',", raw).group()
-                tmp_tuner = str(tmp_tuner[21:-3])
+                tmp_tuner = re.search("Tuners', 'value': '<@.*?>'", raw).group()
+                tmp_tuner = str(tmp_tuner[21:-2])
                 added = False
                 #search for the tuner in the tuner list and add the workshop to them
                 for y in tuner_list:
@@ -161,17 +176,24 @@ def retrieve_channels(server_ID):
                         if y.id in unclaimed_ids:
                             #if id unclaimed, set unclaimed
                             y.claimed = False
-                            print('Append {:} to unclaimed - ID match: {:}'.format(x['name'], x['id']))#check timestamp
-                #check the most recent timestamp and compare to now()
-                recent_activity = retrieve_messages(x['id'], 1)
-                for y in recent_activity:
-                    message_time = datetime.datetime.fromisoformat(y['timestamp']).timestamp()
-                    if check_time_stamp - message_time > 10*days:
-                        for z in workshop_list:
-                            if z.id == x['id']:
-                                z.deactivate()
-                #check recent five messages for !close
+                            print('Append {:} to unclaimed - ID match: {:}'.format(x['name'], x['id']))
+
+                #check recent five messages
                 recent_activity = retrieve_messages(x['id'], 5)
+                
+                #deactivate workshop if bot sent last message 
+                if '1507753351847084184' in str(recent_activity[0]):
+                    for z in workshop_list:
+                        if z.id == x['id']:
+                            z.deactivate()
+                #or if message is old
+                message_time = datetime.datetime.fromisoformat(recent_activity[0]['timestamp']).timestamp()
+                if (check_time_stamp - message_time > 10*days):
+                    for z in workshop_list:
+                        if z.id == x['id']:
+                            z.deactivate()
+
+                # check for failed closes
                 for y in recent_activity:
                     if y['content'] == '!close':
                         for z in workshop_list:
@@ -270,15 +292,17 @@ def print_workshops():
     
     #print unclaimed workshops, varying formating based on if they have budget, tip, or both
     line_counter = 0
-    print('\n**Unclaimed workshop list:**')
+    print('\nUnclaimed workshop list:')
     for x in workshop_list:
         if x.claimed == False:
-            entry='- #{:}: {:}'.format(x.name, x.cat)
+            emoji = '  '
+            entry = '- #{:}: `[{:}]`'.format(x.name, x.bracket)
+            entry += ' __{:}__'.format(x.commander)
             if x.budget != 'none':
-                entry += ' | {:}'.format(x.budget)
-            entry += ' | __{:}__'.format(x.commander)
+                entry += ' `budget: {:}`'.format(x.budget)
             if x.tip != 0:
-                entry += ' | :dollar: **TIP: {:.2f} $$** '.format(x.tip)
+                entry += ' `tip: ${:.0f}`'.format(x.tip)   
+                emoji += ':coin:'
                 #add tip to tip total
                 tip_tot += x.tip
                 if x.tip > high_tip:
@@ -290,20 +314,24 @@ def print_workshops():
                 new += 1
                 line_counter += 1
                 unclaimed += 1
-                print (entry)
             elif x.run_days <= 30:
                 entry += ' _({:.0f} days)_'.format(x.run_days)
                 line_counter += 1
                 unclaimed += 1
-                print (entry)
             elif x.run_days < 60:
-                entry += ' _(> 1 month)_ `[URGENT]` :exclamation: '
+                entry += ' _(> 1 month)_'
+                emoji += ':exclamation:'
                 urgent += 1
                 line_counter += 1
                 unclaimed += 1
-                print (entry)
             else:
                 entry = ' - DELETE BEFORE POSTING {:} DELETE BEFORE POSTING '.format(x.name)
+
+            if len(emoji) >=4:
+                entry += emoji
+            
+            #print
+            print (entry)
             if line_counter == 16:
                 print('\n')
                 line_counter = 0
@@ -311,9 +339,9 @@ def print_workshops():
             claimed += 1
     
     #print bounty report
-    print('\n:dollar: **Workshop Bounty Board** :dollar: ')
-    print('- **{:.2f} $$** total is available in unclaimed tips.'.format(tip_tot))
-    print('- Highest bounty amount: **{:.2f} $$** in #{:}'.format(high_tip, high_name))
+    print('\n:coin: Workshop Bounty Board :coin: ')
+    print('- `${:.0f}` total is available in unclaimed tips.'.format(tip_tot))
+    print('- Highest bounty amount: `${:.0f}` in #{:}'.format(high_tip, high_name))
 
     #print tuner list to show tuner activity
     tuner_list.sort(key=lambda x: len(x.active_workshops), reverse=True)
@@ -333,10 +361,9 @@ def print_workshops():
     print('- {:} unclaimed workshops were created more than 30 days ago. ({:.2f}%)'.format(urgent, 100*(urgent/unclaimed)))
     print('- {:} unclaimed workshops were made in the past 7 days. ({:.2f}%)'.format(new, 100*(new/unclaimed)))
     print('- {:} total workshops have have been inactive for more than 20 days. ({:.2f}%)'.format(inactive, 100*(inactive/tot)))
-    print('- {:} of inactive workshops that have been claimed by a tuner already. ({:.2f}%)'.format(inactive_claimed, 100*(inactive_claimed/inactive)))
-    print('- {:} total workshop requests received; {:} of all-time workshops have been closed. ({:2f}%) '.format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
+    #print('- {:} of inactive workshops that have been claimed by a tuner already. ({:.2f}%)'.format(inactive_claimed, 100*(inactive_claimed/inactive)))
+    print('- {:} total workshop requests received; {:} of all-time workshops have been closed. ({:.2f}%) '.format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
 
 if __name__ == '__main__':
     retrieve_channels(decktuner)
     print_workshops()
-    
