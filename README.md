@@ -31,7 +31,7 @@ Replace the strings with strings containing your discord authentication code and
 	
 	3d. Get the workshop's last message time and creation time, and compare timestamps to the current time. 
 		
-		3dα. If the message is more than 20 days old, then set as inactive with deactivate()
+		3dα. If the last message is more than 10 days old or is from the bot, then set as inactive with deactivate()
 		
 		3dβ. If the workshop is less than 7 days old, mark with flag_new()
 		
