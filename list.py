@@ -288,9 +288,10 @@ def print_workshops():
             inactive += 1
             if x.claimed == True:
                 print(' - #{:}'.format(x.name))
+                workshop_list.remove(x)
                 inactive_claimed += 1
     
-    #print unclaimed workshops, varying formating based on if they have budget, tip, or both
+    #print unclaimed workshops
     line_counter = 0
     print('\nUnclaimed workshop list:')
     for x in workshop_list:
@@ -345,7 +346,7 @@ def print_workshops():
 
     #print tuner list to show tuner activity
     tuner_list.sort(key=lambda x: len(x.active_workshops), reverse=True)
-    print('\n**Tuner Activity in {:} claimed workshops:**'.format(claimed))
+    print('\nTuner Activity in {:} claimed workshops:'.format(claimed))
     for y in tuner_list:
         print('- <@{:}>: {:} active workshops. ({:.2f}%) AVG Time: {:.0f} days.'.format(y.get_id(), len(y.active_workshops), 100*(len(y.active_workshops)/claimed), (y.runtime/len(y.active_workshops))/days))
 
@@ -355,15 +356,16 @@ def print_workshops():
     alltime_tot = int(newest_shop.name.replace('workshop-', ''))
     
     #do and print maths
-    print('\n\n**Workshop Stats:**')
+    print('\nWorkshop Stats:')
     print('- There are {:} open workshops, and {:} ({:.2f}%) of them are unclaimed.'.format(tot, unclaimed, 100*(unclaimed/tot)))
     print('- Unclaimed workshops have been open for an average of {:.0f} days (approx {:.0f} months).'.format((day_tot/unclaimed), ((day_tot/30)/unclaimed)))
     print('- {:} unclaimed workshops were created more than 30 days ago. ({:.2f}%)'.format(urgent, 100*(urgent/unclaimed)))
     print('- {:} unclaimed workshops were made in the past 7 days. ({:.2f}%)'.format(new, 100*(new/unclaimed)))
-    print('- {:} total workshops have have been inactive for more than 20 days. ({:.2f}%)'.format(inactive, 100*(inactive/tot)))
-    #print('- {:} of inactive workshops that have been claimed by a tuner already. ({:.2f}%)'.format(inactive_claimed, 100*(inactive_claimed/inactive)))
+    print('- {:} total workshops have have been inactive for more than 10 days. ({:.2f}%)'.format(inactive, 100*(inactive/tot)))
+    print('- {:} of the inactive workshops have been claimed by a tuner already. ({:.2f}%)'.format(inactive_claimed, 100*(inactive_claimed/inactive)))
     print('- {:} total workshop requests received; {:} of all-time workshops have been closed. ({:.2f}%) '.format(alltime_tot, alltime_tot - tot, 100*((alltime_tot - tot)/alltime_tot) ))
 
 if __name__ == '__main__':
     retrieve_channels(decktuner)
     print_workshops()
+    
